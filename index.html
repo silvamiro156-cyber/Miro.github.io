@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha Loja</title>
+<link rel="manifest" href="manifest.json">
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2}
+header{background:#111;color:#fff;padding:15px;text-align:center}
+.container{padding:15px}
+.card{background:#fff;padding:10px;margin-bottom:10px;border-radius:8px}
+button{padding:8px 12px;border:none;border-radius:5px;background:#111;color:#fff}
+input{padding:8px;width:100%;margin-bottom:10px}
+.admin{background:#ffeaea;padding:10px;border-radius:8px}
+</style>
+</head>
+<body>
+
+<header>Minha Loja</header>
+
+<div class="container" id="login">
+<h3>Login Cliente</h3>
+<input id="nome" placeholder="Seu nome">
+<button onclick="entrar()">Entrar</button>
+</div>
+
+<div class="container" id="loja" style="display:none">
+<h3>Produtos</h3>
+<div id="produtos"></div>
+<h3>Carrinho</h3>
+<div id="carrinho"></div>
+<p><b>Chave Pix:</b> 11959096013</p>
+<button onclick="copiarPix()">Copiar Chave Pix</button>
+<hr>
+<button onclick="abrirAdmin()">Painel Admin</button>
+</div>
+
+<div class="container admin" id="admin" style="display:none">
+<h3>Painel Admin</h3>
+<input type="password" id="senhaAdmin" placeholder="Senha admin">
+<button onclick="logarAdmin()">Entrar</button>
+<div id="adminArea" style="display:none">
+<h4>Adicionar Produto</h4>
+<input id="nomeProduto" placeholder="Nome do produto">
+<input id="precoProduto" placeholder="Preço">
+<button onclick="addProduto()">Adicionar</button>
+<h4>Pedidos</h4>
+<div id="pedidos"></div>
+</div>
+</div>
+
+<script>
+let usuario = "";
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+let carrinho = [];
+
+function entrar(){
+  usuario = document.getElementById("nome").value;
+  if(usuario){
+    document.getElementById("login").style.display="none";
+    document.getElementById("loja").style.display="block";
+    carregarProdutos();
+  }
+}
+
+function carregarProdutos(){
+  let div = document.getElementById("produtos");
+  div.innerHTML="";
+  produtos.forEach((p,i)=>{
+    div.innerHTML+=`<div class='card'>
+    ${p.nome} - R$ ${p.preco}
+    <button onclick='comprar(${i})'>Comprar</button>
+    </div>`;
+  });
+}
+
+function comprar(i){
+  carrinho.push(produtos[i]);
+  atualizarCarrinho();
+}
+
+function atualizarCarrinho(){
+  let div = document.getElementById("carrinho");
+  div.innerHTML="";
+  let total=0;
+  carrinho.forEach((p,i)=>{
+    total+=parseFloat(p.preco);
+    div.innerHTML+=`${p.nome} - R$ ${p.preco}<br>`;
+  });
+  div.innerHTML+="<br><b>Total: R$ "+total.toFixed(2)+"</b><br>";
+  if(total>0){
+    div.innerHTML+="<button onclick='finalizar("+total+")'>Finalizar Pedido</button>";
+  }
+}
+
+function finalizar(total){
+  let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+  pedidos.push({cliente:usuario,total:total});
+  localStorage.setItem("pedidos",JSON.stringify(pedidos));
+  alert("Pedido enviado!");
+  carrinho=[];
+  atualizarCarrinho();
+}
+
+function copiarPix(){
+  navigator.clipboard.writeText("11959096013");
+  alert("Chave Pix copiada!");
+}
+
+function abrirAdmin(){
+  document.getElementById("admin").style.display="block";
+}
+
+function logarAdmin(){
+  let senha=document.getElementById("senhaAdmin").value;
+  if(senha==="1983"){
+    document.getElementById("adminArea").style.display="block";
+    carregarPedidos();
+  }else{
+    alert("Senha incorreta");
+  }
+}
+
+function addProduto(){
+  let nome=document.getElementById("nomeProduto").value;
+  let preco=document.getElementById("precoProduto").value;
+  produtos.push({nome,preco});
+  localStorage.setItem("produtos",JSON.stringify(produtos));
+  carregarProdutos();
+  alert("Produto adicionado!");
+}
+
+function carregarPedidos(){
+  let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+  let div=document.getElementById("pedidos");
+  div.innerHTML="";
+  pedidos.forEach((p,i)=>{
+    div.innerHTML+=`<div class='card'>
+    ${p.cliente} - R$ ${p.total}
+    <button onclick='excluirPedido(${i})'>🗑️</button>
+    </div>`;
+  });
+}
+
+function excluirPedido(i){
+  let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+  pedidos.splice(i,1);
+  localStorage.setItem("pedidos",JSON.stringify(pedidos));
+  carregarPedidos();
+}
+</script>
+
+</body>
+</html>
